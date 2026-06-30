@@ -1,0 +1,13 @@
+[project]
+name = "pr-watch"
+version = "0.1.0"
+description = "Watch cross-team GitHub PRs, alert Slack on business-hours SLA breaches, and post daily review digests — standard library only."
+requires-python = ">=3.10"
+dependencies = []
+
+[dependency-groups]
+dev = ["ruff>=0.11", "pytest>=7.4"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

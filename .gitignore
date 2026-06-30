@@ -1,0 +1,18 @@
+.venv/
+venv/
+__pycache__/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+dist/
+build/
+.DS_Store
+
+# Local state file(s) — never commit
+*.json
+pr_watch_state.json
+
+.env
+.env.*
+*.local
+secrets*

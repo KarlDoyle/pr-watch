@@ -1,0 +1,10 @@
+# Ruff config — the standard lint + format profile (line-length 100).
+line-length = 100
+target-version = "py310"
+
+[lint]
+# E/W: pycodestyle, F: pyflakes, I: import sorting, UP: pyupgrade, B: bugbear.
+select = ["E", "W", "F", "I", "UP", "B"]
+
+[format]
+quote-style = "double"
