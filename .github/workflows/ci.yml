@@ -1,0 +1,42 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# Python equivalent of the standard Node ci.yml. Same idea: sequential, boring,
+# cheapest-first gates that mirror the local pre-push hook. ruff plays the role
+# biome plays on the TS side (lint + format check); pytest is the test gate.
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install
+        run: uv sync --dev
+
+      # 1. Lint (ruff) — fastest failure.
+      - name: Lint
+        run: uv run ruff check .
+
+      # 2. Format check (ruff).
+      - name: Format check
+        run: uv run ruff format --check .
+
+      # 3. Tests (pytest).
+      - name: Test
+        run: uv run pytest
