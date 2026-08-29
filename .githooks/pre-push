@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Pre-push gate (Python / uv) — the ai-starter standard.
+#
+# Runs the same checks CI runs, locally, before code leaves the machine:
+#   1. ruff check  (lint)
+#   2. pytest      (tests, incl. tests/test_secret_scan.py)
+# Blocks the push on failure so drift can't reach the remote.
+#
+# Enabled via `git config core.hooksPath .githooks`. Run ./scripts/install-hooks.sh
+# once after `uv sync` (the uv-equivalent of npm's `prepare`).
+#
+# Skip in an emergency with `git push --no-verify`.
+
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+# Robust no-op: if uv isn't installed, don't hard-block — CI is the backstop.
+if ! command -v uv >/dev/null 2>&1; then
+  echo "pre-push: uv not found — skipping local gate (CI still enforces)." >&2
+  exit 0
+fi
+
+echo "pre-push: ruff + pytest…"
+
+if ! uv run ruff check .; then
+  echo "pre-push: ruff failed — push aborted." >&2
+  exit 1
+fi
+
+if ! uv run pytest -q; then
+  echo "pre-push: tests failed — push aborted." >&2
+  exit 1
+fi
+
+echo "pre-push: OK."
