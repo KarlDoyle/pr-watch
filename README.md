@@ -415,8 +415,8 @@ or deploy this.
 ```bash
 uv run ruff check .
 uv run ruff format --check .
-uv run pytest -q          # 93 tests: pr_watch core (45) + rollup (26) +
-                           # github_app webhook (16) + github_app auth (6)
+uv run pytest -q          # 105 tests: pr_watch core (45) + rollup (22) +
+                           # github_app webhook (25) + server (7) + auth (6)
 ```
 
 The test suite uses **no network and no tokens**: the GitHub, Slack and PagerDuty
