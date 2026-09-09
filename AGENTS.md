@@ -4,28 +4,48 @@ The canonical agent instructions for this repo (CLAUDE.md defers here).
 
 ## Project
 
-A single-file, stdlib-only **PR SLA watcher**. `pr_watch.py` polls open GitHub
-PRs where a given team is explicitly requested to review, measures how long
-each has waited in **business hours** since the latest team review-request,
-and posts Slack alerts/digests accordingly. It is **read-only against
-GitHub** — it never merges, approves, or comments on a PR.
+A **PR SLA watcher**, three modes on one engine:
 
-- 🚨 real-time Slack breach alerts, deduped via a local JSON state file
-  (`pr_watch_state.json`)
-- 📋 daily digests at fixed review windows, grouped Breached / Approaching / Fresh
-- 👤 pings the current on-call by resolving PagerDuty → Slack ID, with a
-  static-mention fallback
+- `pr_watch.py` — the original, single-file, stdlib-only CLI. Polls open
+  GitHub PRs where a given team is explicitly requested to review,
+  measures how long each has waited in **business hours** since the
+  latest team review-request, and posts Slack alerts/digests accordingly.
+  It is **read-only against GitHub** — it never merges, approves, or
+  comments on a PR. This mode is unchanged and still the default way to
+  run PR Watch.
+- `github_app/` — additive GitHub App/webhook mode: `pull_request`
+  (`review_requested`) events replace Search-API polling for discovery;
+  SLA evaluation stays a periodic sweep (`webhook.sweep_and_alert`)
+  because breach is time-elapsed, not event-driven. Needs manual App
+  registration on github.com — see README's "Manual setup: GitHub App".
+- `rollup.py` — additive multi-team, director/HR-level digest. Aggregates
+  several team/org sources into one awareness-framed cross-team Slack
+  digest (never a per-team performance ranking — see the module
+  docstring and README's "Multi-team landscape rollup" section for why).
+- `forge_app/` — Atlassian Forge scaffold (Jira dashboard gadget)
+  surfacing `rollup.py`'s digest. Needs manual Forge registration — see
+  README's "Manual setup: Atlassian Forge".
+
+Common to all: 🚨 real-time Slack breach alerts, deduped via a local JSON
+state file; 📋 digests at fixed review windows, grouped Breached /
+Approaching / Fresh; 👤 (CLI/webhook modes only) pings the current on-call
+by resolving PagerDuty → Slack ID, with a static-mention fallback.
 
 ## Build / test / lint
 
-Python 3.10+, managed with [uv](https://docs.astral.sh/uv/). No runtime
-dependencies; `ruff` + `pytest` are dev-only.
+Python 3.10+, managed with [uv](https://docs.astral.sh/uv/). `pr_watch.py`
+and `rollup.py` have no runtime dependencies. `github_app/auth.py` needs
+`cryptography` for RS256 JWT signing — installed via the `github-app`
+extra, and included in the `dev` group so the full test suite runs without
+a second install step. `ruff` + `pytest` are dev-only. `forge_app/` is a
+separate Node/Forge project (`npm install` inside `forge_app/`), not part
+of the Python test/lint gate.
 
 ```bash
-uv sync --dev              # install dev tools into .venv
-uv run ruff check .        # lint
+uv sync --dev                  # install dev tools (+ cryptography) into .venv
+uv run ruff check .            # lint
 uv run ruff format --check .   # format check (double quotes, line-length 100)
-uv run pytest               # test suite (45 tests)
+uv run pytest                  # test suite (105 tests)
 ```
 
 Dry-run the bot itself (prints, posts nothing):
@@ -96,10 +116,18 @@ this test green — do not weaken or remove it.
 
 ## Rules
 
-- Never commit secrets or tokens. `GH_TOKEN` and `SLACK_BOT_TOKEN` are sourced
-  from the environment only; the source constants must remain `None`.
+- Never commit secrets or tokens. `GH_TOKEN`, `SLACK_BOT_TOKEN`,
+  `GH_WEBHOOK_SECRET`, and any App private key path are sourced from the
+  environment only; source constants must remain `None`.
 - Keep tests green — `uv run pytest` must pass before any change lands.
 - This tool is read-only against GitHub: do not add code paths that merge,
   approve, or otherwise mutate a PR.
-- No new runtime dependencies without a strong reason — the zero-dependency
-  design is deliberate (see README's "Why it is built this way").
+- No new runtime dependencies without a strong reason — `pr_watch.py` and
+  `rollup.py` stay zero-dependency. `github_app/auth.py`'s `cryptography`
+  dependency is the one deliberate, isolated exception (RS256 JWT signing
+  has no stdlib path); keep it out of `pr_watch.py` and `rollup.py`.
+- `rollup.py`'s Slack output must stay in aggregate/awareness framing — no
+  named individuals, no per-team "who's slow" language. See its module
+  docstring before changing `format_landscape_digest`.
+- `github_app/` and `rollup.py` are additive: do not change `pr_watch.py`'s
+  single-team CLI/polling behaviour to make room for either.
