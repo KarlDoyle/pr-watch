@@ -5,8 +5,17 @@ description = "Watch cross-team GitHub PRs, alert Slack on business-hours SLA br
 requires-python = ">=3.10"
 dependencies = []
 
+[project.optional-dependencies]
+# Only needed for github_app/ (App JWT signing, RS256). The core CLI
+# (pr_watch.py) and the multi-team rollup (rollup.py) stay zero-dependency;
+# this extra is opt-in and only imported by github_app/auth.py.
+github-app = ["cryptography>=42"]
+
 [dependency-groups]
-dev = ["ruff>=0.11", "pytest>=7.4"]
+# cryptography is here too (not just the extra) so `uv sync --dev` can run
+# the full test suite, including github_app/auth.py's JWT tests, without a
+# second install step.
+dev = ["ruff>=0.11", "pytest>=7.4", "cryptography>=42"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

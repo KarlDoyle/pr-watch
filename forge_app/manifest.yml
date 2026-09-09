@@ -1,0 +1,53 @@
+# PR Watch — Atlassian Forge app manifest.
+#
+# Forge (not Connect — Connect is closed to new apps) module: a Jira
+# dashboard gadget showing the same cross-team "landscape" digest that
+# rollup.py posts to Slack (see ../rollup.py) — director/HR-level, aggregate,
+# awareness-framed, never a per-team performance ranking.
+#
+# PLACEHOLDERS to replace before `forge deploy` (see forge_app/README.md for
+# the exact manual steps — this cannot be deployed without Karl's own
+# Atlassian developer account):
+#   - app.id                          (assigned by `forge create`/`forge register`)
+#   - permissions.external.fetch.backend (the host serving landscape.json)
+
+modules:
+  jira:dashboardGadget:
+    - key: pr-watch-landscape-gadget
+      title: "PR Watch: Cross-Team Review Landscape"
+      description: >-
+        Aggregate, director-level view of cross-team PR review wait times.
+        Informational — not a per-team performance ranking.
+      thumbnail: resources/thumbnail.svg
+      resource: main
+      render: native
+      resolver:
+        function: resolver
+
+  function:
+    - key: resolver
+      handler: resolvers/index.handler
+    - key: refreshLandscape
+      handler: resolvers/index.refreshLandscape
+
+  scheduledTrigger:
+    - key: refresh-landscape-trigger
+      function: refreshLandscape
+      interval: hour
+
+resources:
+  - key: main
+    path: src/frontend/index.jsx
+
+permissions:
+  scopes:
+    - storage:app
+  external:
+    fetch:
+      backend:
+        - "REPLACE_WITH_LANDSCAPE_JSON_HOST" # e.g. your-pr-watch-host.example — must serve landscape.json over HTTPS
+
+app:
+  id: "REPLACE_WITH_APP_ID" # from `forge create` / `forge register` — see forge_app/README.md
+  runtime:
+    name: nodejs20.x
