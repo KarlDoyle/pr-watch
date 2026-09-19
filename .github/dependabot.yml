@@ -1,5 +1,6 @@
-# Dependency updates, proposed weekly as ONE grouped PR per ecosystem — never merged
-# automatically. Added 2026-09-18 (moss check found no dependency-update config here).
+# Dependency updates, weekly. Minor + patch come as ONE grouped PR per ecosystem (safe;
+# merge when CI is green). Majors come in their OWN group PR so a breaking upgrade never
+# blocks the routine ones — take them as a planned upgrade. Never auto-merged by Dependabot.
 version: 2
 updates:
   - package-ecosystem: uv
@@ -9,8 +10,12 @@ updates:
       day: monday
     open-pull-requests-limit: 5
     groups:
-      uv-all:
+      uv-minor-patch:
         patterns: ["*"]
+        update-types: [minor, patch]
+      uv-major:
+        patterns: ["*"]
+        update-types: [major]
   - package-ecosystem: github-actions
     directory: /
     schedule:
@@ -18,5 +23,9 @@ updates:
       day: monday
     open-pull-requests-limit: 5
     groups:
-      github-actions-all:
+      github-actions-minor-patch:
         patterns: ["*"]
+        update-types: [minor, patch]
+      github-actions-major:
+        patterns: ["*"]
+        update-types: [major]
