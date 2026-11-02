@@ -1,13 +1,13 @@
 # PR Watch (`pr-watch`)
 
-Keep cross-team pull requests moving. **PR Watch** watches open GitHub PRs where
-your team is explicitly requested to review, measures how long each has been
-waiting in **business hours** since the latest team review-request, and:
+**PR Watch helps the on-call engineer keep a team’s pull request review queue moving.** It finds open GitHub PRs where the team has been asked to review, tracks waiting time in business hours, and alerts the current on-call when reviews are approaching or past the team’s threshold. That makes it easier to spot an accumulating queue before requests are overlooked.
 
-![tests](https://img.shields.io/badge/tests-93-slategray?style=flat-square)
+PR Watch is for **acting on today’s review queue**. It complements a PR latency reporter, which is for **analysing historical review performance and trends**.
+
+![tests](https://img.shields.io/badge/tests-105-slategray?style=flat-square)
 ![deps](https://img.shields.io/badge/runtime--deps-zero-slategray?style=flat-square)
 ![python](https://img.shields.io/badge/python-3.10%2B-slategray?style=flat-square)
-![licence](https://img.shields.io/badge/licence-UNLICENSED-slategray?style=flat-square)
+![licence](https://img.shields.io/badge/licence-MIT-green?style=flat-square)
 
 - 🚨 posts **real-time Slack SLA-breach alerts** (deduped via a local JSON state file),
 - 📋 posts **daily digests** at fixed review windows (Breached / Approaching / Fresh),
@@ -15,13 +15,28 @@ waiting in **business hours** since the latest team review-request, and:
 
 It is **read-only** against GitHub — it never merges or approves anything.
 
-## Three modes, one engine
+## Architecture and status
 
-| Mode | Entry point | Audience | Status |
+The primary path is the CLI, run on a schedule. The rollup is a separate, optional reporting path, and the GitHub App is an undeployed event-driven alternative that needs registration and hosting.
+
+```mermaid
+flowchart LR
+  GH[GitHub review requests] --> CLI[CLI poller\npr_watch.py]
+  CLI --> CORE[Business-hours queue\nthresholds + state]
+  CORE --> SL[Slack alerts + digest]
+  PD[PagerDuty on-call] --> SL
+  GH -. optional webhook .-> APP[GitHub App\nnot deployed]
+  APP --> CORE
+  MULTI[Multiple teams] --> ROLLUP[rollup.py\nstandalone digest]
+  CORE -. JSON snapshot .-> FORGE[Forge gadget\nscaffold only]
+```
+
+| Component | Entry point | Purpose | Status |
 |---|---|---|---|
-| **CLI / polling** (original) | `pr_watch.py` | One team, their own Slack channel | Working, unchanged |
-| **GitHub App / webhook** | `github_app/` | Same team-level alerting, event-driven instead of polled | Code complete, **needs manual registration** (below) |
-| **Multi-team rollup** | `rollup.py` | Director/HR-level, several teams at once | Working, standalone |
+| **CLI / polling** | `pr_watch.py` | One team’s active review queue and on-call alerts | **Available**; primary usage path |
+| **Multi-team rollup** | `rollup.py` | Aggregate awareness digest across several teams | **Available**, standalone and separate from the on-call queue |
+| **GitHub App / webhook** | `github_app/` | Event-driven alternative to polling | **Not deployed**; code requires manual App registration and a reachable host |
+| **Atlassian Forge gadget** | `forge_app/` | Jira dashboard view of a rollup snapshot | **Scaffold only**; requires registration, hosting and deployment |
 
 The webhook and rollup modes are **additive** — they import and reuse
 `pr_watch.py`'s business-hours engine, categorisation, state-file dedup and
@@ -437,4 +452,4 @@ this touches a live, registered GitHub App or Atlassian tenant.
 
 ## Licence
 
-Unlicensed (all rights reserved) — personal tooling, not published for reuse.
+PR Watch is licensed under the [MIT License](LICENSE).

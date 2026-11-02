@@ -1,8 +1,10 @@
 [project]
 name = "pr-watch"
 version = "0.1.0"
-description = "Watch cross-team GitHub PRs, alert Slack on business-hours SLA breaches, and post daily review digests — standard library only."
+description = "Proactively monitor the GitHub PR review queue and alert the current on-call — standard library only."
 requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
 dependencies = []
 
 [project.optional-dependencies]
